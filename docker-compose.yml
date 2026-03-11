@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  wb_db:
+    image: postgres:16
+    container_name: wb_db
+    restart: unless-stopped
+    ports:
+      - "5440:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DB_POSTGRES_PASSWORD}
+    volumes:
+      - wb_db:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    # Проверка состояния 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_POSTGRES_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  
+  wb_app:
+    image: wb-parser-app:latest
+    build:
+      context: ./src
+      dockerfile: Dockerfile
+    container_name: wb_app
+    restart: "no"
+    depends_on:
+      wb_db:
+        condition: service_healthy
+    environment:
+      # Передаем переменные из .env в контейнер
+      DB_HOST: wb_db  
+      DB_PORT: 5432    # внутренний порт PostgreSQL
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_POSTGRES_USER}
+      DB_PASSWORD: ${DB_POSTGRES_PASSWORD}
+    volumes:
+      - ./src:/app
+      - ./excel:/excel
+      
+volumes:
+  wb_db:
+  wb_app:
