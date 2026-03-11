@@ -5,7 +5,7 @@
 sudo docker compose build
 ```
 
-## Создать копию файла .env из .env.example
+## Создать копию файла .env из .env.example(обязательно внутри папки ./src!!!)
 ```console
 cp .env.example .env
 ```
